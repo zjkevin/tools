@@ -27,13 +27,22 @@ def file_md5(file_path):
 source_path = r"/home/kevin"
 # 备份目录支持多个
 backup_path = [r"/media/kevin/Samsung USB/backup"]
+
+# 忽略目录
+ignore_path = [r"/home/kevin/.config"]
+
 log_prefix = datetime.now().strftime("%Y%m%d%H%M%S%f")
+
+LOG_PATH = "log"
+
 # 修改日志
 mod_log = "mod_%s.log" % log_prefix 
 # 删除日志
 del_log = "del_%s.log" % log_prefix
 # 处理日志
 process_log = "%s.log" % log_prefix
+# 忽略日志
+ignore_log = "ignore_%s.log" % log_prefix
 
 MODIF_SAVE = True
 DEL_SAVE = True
@@ -50,10 +59,22 @@ def del_log_write(mes):
 def process_log_write(mes):
     log_write(mes,process_log)
 
+def ignore_log_write(mes):
+    log_write(mes,ignore_log)
+
 def log_write(mes,path):
-    path = os.path.join(os.path.abspath("."), path)
+    path = os.path.join(os.path.abspath("."), LOG_PATH, path)
     with codecs.open(path, 'a+', 'utf-8') as f:
         f.write("%s\n" % mes)
+
+# 目录是否以忽略目录为开头
+def is_ignore_path(path):
+    for i_p in ignore_path:
+         if len(path) >= len(i_p):
+             if path[:len(i_p)] == i_p:
+                  ignore_log_write(path)
+                  return True
+    return False
 
 # 源目录-> 备份目录
 def back_up_process(source_path,backup_path,modif=True):
@@ -74,12 +95,20 @@ def back_up_process(source_path,backup_path,modif=True):
         for d in dirnames:
             process_log_write("源目录:%s" % os.path.join(parent,d))
             # 检查备份目录是否有该目录 没有则新建 有则pass
-            process_log_write("备份目录 %s" % os.path.join(backup_path,sub_dir,d))
-            process_log_write(os.path.exists(os.path.join(backup_path,sub_dir,d)))
-            if not os.path.exists(os.path.join(backup_path,sub_dir,d)):
+            backup_path_join = os.path.join(backup_path,sub_dir,d)
+            process_log_write("备份目录 %s" % backup_path_join)
+            process_log_write(os.path.exists(backup_path_join))
+            # 忽略文件夹
+            if is_ignore_path(backup_path_join):
+                continue
+            if not os.path.exists(backup_path_join):
                 process_log_write("mkdir...".center(80,'-'))
-                os.makedirs(os.path.join(backup_path,sub_dir,d))
+                os.makedirs(backup_path_join)
+
         for f in filenames:
+            # 忽略文件夹
+            if is_ignore_path(parent):
+                continue
             process_log_write("源文件:%s" % os.path.join(parent,f))
             if not os.path.exists(os.path.join(backup_path,sub_dir,f)):
                 process_log_write("copy...".center(80,'-'))
