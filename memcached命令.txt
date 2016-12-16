@@ -1,0 +1,1 @@
+memcached -d -m 512  -u root -l 0.0.0.0 -p 12111 -c 1024 -P /tmp/memcached.pid 
